@@ -1,0 +1,34 @@
+name: Duplicate Issue Detection
+
+# Automatically scans newly opened issues for likely duplicates and, when there
+# is a strong match, posts a single comment pointing to the candidate issue(s).
+#
+# NOTE: GitHub Issues must be enabled on this repository for this workflow to
+# fire. Enable them under Settings -> General -> Features -> Issues
+# (or run: gh repo edit --enable-issues).
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+  contents: read
+
+concurrency:
+  group: dup-detect-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  detect-duplicates:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect duplicates
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: bash .github/scripts/detect-duplicate-issues.sh
