@@ -1,0 +1,39 @@
+name: Duplicate Issue Detection
+
+# Automatically checks each newly opened issue against existing issues and
+# posts a comment when high-confidence potential duplicates are found.
+#
+# NOTE: this repository currently has Issues disabled. Enable Issues in the
+# repository settings for this workflow to have anything to run against.
+
+on:
+  issues:
+    types: [opened]
+
+# Least-privilege token: read the repo, write issue comments.
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: dup-detect-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  detect-duplicates:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Detect potential duplicate issues
+        env:
+          # `gh` picks up authentication from GH_TOKEN automatically.
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: python .github/scripts/detect_duplicate_issues.py
