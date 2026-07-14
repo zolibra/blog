@@ -1,0 +1,39 @@
+name: Duplicate Issue Detection
+
+# Automatically flags potential duplicate issues with a comment when a new
+# issue is opened (or reopened / edited). Requires "Issues" to be enabled on
+# the repository.
+
+on:
+  issues:
+    types: [opened, reopened, edited]
+
+# Avoid re-running for rapid successive edits to the same issue.
+concurrency:
+  group: dup-detect-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  detect-duplicates:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Detect duplicate issues
+        env:
+          # gh CLI auth; GITHUB_TOKEN is provided automatically.
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          python .github/scripts/detect_duplicate_issues.py \
+            --issue "${{ github.event.issue.number }}"
